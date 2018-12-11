@@ -7,7 +7,7 @@ docker_credentials = "iguazio-dev-docker-credentials"
 artifactory_user = "gallz"
 artifactory_credentials = "iguazio-dev-artifactory-credentials"
 git_project = "demos"
-git_project_user = "v3io"
+git_project_user = "gkirok"
 git_deploy_user = "iguazio-dev-git-user"
 git_deploy_user_token = "iguazio-dev-git-user-token"
 
