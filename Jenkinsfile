@@ -100,7 +100,7 @@ spec:
                     container('docker-cmd') {
                         sh """
                             cd ${BUILD_FOLDER}/src/github.com/v3io/${git_project}/netops/golang/src/github.com/v3io/demos
-                            docker build . --tag netops-demo-golang:latest --tag ${docker_user}/netops-demo-golang:${TAG_VERSION} --build-arg NUCLIO_BUILD_OFFLINE=true --build-arg NUCLIO_BUILD_IMAGE_HANDLER_DIR=github.com/v3io/demos
+                            docker build . --tag netops-demo-golang:latest --tag ${docker_user}/netops-demo-golang:${TAG_VERSION} --tag ${docker_user}/netops-demo-golang:latest --tag quay.io/${quay_user}/netops-demo-golang:${TAG_VERSION} --tag quay.io/${quay_user}/netops-demo-golang:latest  --tag ${ARTIFACTORY_URL}/${artifactory_user}/netops-demo-golang:${TAG_VERSION} --tag ${ARTIFACTORY_URL}/${artifactory_user}/netops-demo-golang:latest --build-arg NUCLIO_BUILD_OFFLINE=true --build-arg NUCLIO_BUILD_IMAGE_HANDLER_DIR=github.com/v3io/demos
                         """
                     }
                 }
@@ -109,7 +109,7 @@ spec:
                     container('docker-cmd') {
                         sh """
                             cd ${BUILD_FOLDER}/src/github.com/v3io/${git_project}/netops/py
-                            docker build . --tag netops-demo-py:latest --tag ${docker_user}/netops-demo-py:${TAG_VERSION}
+                            docker build . --tag netops-demo-py:latest --tag ${docker_user}/netops-demo-py:${TAG_VERSION} --tag ${docker_user}/netops-demo-py:latest --tag quay.io/${quay_user}/netops-demo-py:${TAG_VERSION} --tag quay.io/${quay_user}/netops-demo-py:latest --tag ${ARTIFACTORY_URL}/${artifactory_user}/netops-demo-py:${TAG_VERSION} --tag ${ARTIFACTORY_URL}/${artifactory_user}/netops-demo-py:latest
                         """
                     }
                 }
@@ -118,7 +118,9 @@ spec:
                     container('docker-cmd') {
                         withDockerRegistry([credentialsId: docker_credentials, url: "https://index.docker.io/v1/"]) {
                             sh "docker push docker.io/${docker_user}/netops-demo-golang:${TAG_VERSION}"
+                            sh "docker push docker.io/${docker_user}/netops-demo-golang:latest"
                             sh "docker push docker.io/${docker_user}/netops-demo-py:${TAG_VERSION}"
+                            sh "docker push docker.io/${docker_user}/netops-demo-py:latest"
                         }
                     }
                 }
@@ -127,7 +129,20 @@ spec:
                     container('docker-cmd') {
                         withDockerRegistry([credentialsId: quay_credentials, url: "https://quay.io/api/v1/"]) {
                             sh "docker push quay.io/${quay_user}/netops-demo-golang:${TAG_VERSION}"
+                            sh "docker push quay.io/${quay_user}/netops-demo-golang:latest"
                             sh "docker push quay.io/${quay_user}/netops-demo-py:${TAG_VERSION}"
+                            sh "docker push quay.io/${quay_user}/netops-demo-py:latest"
+                        }
+                    }
+                }
+
+                stage('push to artifactory') {
+                    container('docker-cmd') {
+                        withDockerRegistry([credentialsId: artifactory_credentials, url: "https://${ARTIFACTORY_URL}/api/v1/"]) {
+                            sh "docker push ${ARTIFACTORY_URL}/${artifactory_user}/netops-demo-golang:${TAG_VERSION}"
+                            sh "docker push ${ARTIFACTORY_URL}/${artifactory_user}/netops-demo-golang:latest"
+                            sh "docker push ${ARTIFACTORY_URL}/${artifactory_user}/netops-demo-py:${TAG_VERSION}"
+                            sh "docker push ${ARTIFACTORY_URL}/${artifactory_user}/netops-demo-py:latest"
                         }
                     }
                 }
