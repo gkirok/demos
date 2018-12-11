@@ -57,7 +57,8 @@ spec:
     node("${git_project}-${label}") {
         withCredentials([
                 usernamePassword(credentialsId: git_deploy_user, passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME'),
-                string(credentialsId: git_deploy_user_token, variable: 'GIT_TOKEN')
+                string(credentialsId: git_deploy_user_token, variable: 'GIT_TOKEN'),
+                string(credentialsId: artifactory_url, variable: 'ARTIFACTORY_URL')
         ]) {
             def AUTO_TAG
             def TAG_VERSION
