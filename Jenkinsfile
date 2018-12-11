@@ -1,11 +1,15 @@
 label = "${UUID.randomUUID().toString()}"
 BUILD_FOLDER = "/go"
-docker_user = "iguaziodocker"
-docker_credentials = "iguazio-prod-docker-credentials"
+quay_user = "gkirok"
+quay_credentials = "iguazio-dev-quay-credentials"
+docker_user = "gallziguazio"
+docker_credentials = "iguazio-dev-docker-credentials"
+artifactory_user = "gallz"
+artifactory_credentials = "iguazio-dev-artifactory-credentials"
 git_project = "demos"
 git_project_user = "v3io"
-git_deploy_user = "iguazio-prod-git-user"
-git_deploy_user_token = "iguazio-prod-git-user-token"
+git_deploy_user = "iguazio-dev-git-user"
+git_deploy_user_token = "iguazio-dev-git-user-token"
 
 properties([pipelineTriggers([[$class: 'PeriodicFolderTrigger', interval: '2m']])])
 podTemplate(label: "${git_project}-${label}", yaml: """
@@ -48,7 +52,7 @@ spec:
     - name: go-shared
       emptyDir: {}
 """
-    ) {
+) {
     node("${git_project}-${label}") {
         withCredentials([
                 usernamePassword(credentialsId: git_deploy_user, passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME'),
@@ -74,7 +78,7 @@ spec:
                     PUBLISHED_BEFORE = sh(
                             script: "tag_published_at=\$(cat ~/tag_version | python -c 'import json,sys;obj=json.load(sys.stdin);print obj[\"published_at\"]'); SECONDS=\$(expr \$(date +%s) - \$(date -d \"\$tag_published_at\" +%s)); expr \$SECONDS / 60 + 1",
                             returnStdout: true
-                    ).trim()
+                    ).trim().toInteger()
 
                     echo "$AUTO_TAG"
                     echo "$TAG_VERSION"
@@ -82,7 +86,7 @@ spec:
                 }
             }
 
-            if ( TAG_VERSION && PUBLISHED_BEFORE < 240 ) {
+            if ( TAG_VERSION != null && TAG_VERSION.length() > 0 && PUBLISHED_BEFORE < 240 ) {
                 stage('prepare sources') {
                     container('jnlp') {
                         sh """
@@ -92,12 +96,18 @@ spec:
                     }
                 }
 
-                stage('build in dood') {
+                stage('build netops-demo-golang in dood') {
                     container('docker-cmd') {
                         sh """
                             cd ${BUILD_FOLDER}/src/github.com/v3io/${git_project}/netops/golang/src/github.com/v3io/demos
                             docker build . --tag netops-demo-golang:latest --tag ${docker_user}/netops-demo-golang:${TAG_VERSION} --build-arg NUCLIO_BUILD_OFFLINE=true --build-arg NUCLIO_BUILD_IMAGE_HANDLER_DIR=github.com/v3io/demos
+                        """
+                    }
+                }
 
+                stage('build netops-demo-py in dood') {
+                    container('docker-cmd') {
+                        sh """
                             cd ${BUILD_FOLDER}/src/github.com/v3io/${git_project}/netops/py
                             docker build . --tag netops-demo-py:latest --tag ${docker_user}/netops-demo-py:${TAG_VERSION}
                         """
@@ -106,11 +116,24 @@ spec:
 
                 stage('push to hub') {
                     container('docker-cmd') {
-                        withDockerRegistry([credentialsId: docker_credentials, url: ""]) {
-                            sh "docker push ${docker_user}/netops-demo-golang:${TAG_VERSION}"
-                            sh "docker push ${docker_user}/netops-demo-py:${TAG_VERSION}"
+                        withDockerRegistry([credentialsId: docker_credentials, url: "https://index.docker.io/v1/"]) {
+                            sh "docker push docker.io/${docker_user}/netops-demo-golang:${TAG_VERSION}"
+                            sh "docker push docker.io/${docker_user}/netops-demo-py:${TAG_VERSION}"
                         }
                     }
+                }
+
+                stage('push to quay') {
+                    container('docker-cmd') {
+                        withDockerRegistry([credentialsId: quay_credentials, url: "https://quay.io/api/v1/"]) {
+                            sh "docker push quay.io/${quay_user}/netops-demo-golang:${TAG_VERSION}"
+                            sh "docker push quay.io/${quay_user}/netops-demo-py:${TAG_VERSION}"
+                        }
+                    }
+                }
+
+                stage('update release status') {
+                    sh "release_id=\$(curl -H \"Content-Type: application/json\" -H \"Authorization: token ${GIT_TOKEN}\" -X GET https://api.github.com/repos/${git_project_user}/${git_project}/releases/tags/v${TAG_VERSION} | python -c 'import json,sys;obj=json.load(sys.stdin);print obj[\"id\"]'); curl -v -H \"Content-Type: application/json\" -H \"Authorization: token ${GIT_TOKEN}\" -X PATCH https://api.github.com/repos/${git_project_user}/${git_project}/releases/\${release_id} -d '{\"prerelease\": false}'"
                 }
             } else {
                 stage('warning') {
