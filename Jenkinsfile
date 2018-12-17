@@ -85,7 +85,7 @@ spec:
                 stage('build netops-demo-golang in dood') {
                     container('docker-cmd') {
                         dir("${BUILD_FOLDER}/src/github.com/v3io/${git_project}/netops/golang/src/github.com/v3io/demos") {
-                            sh("docker build . netops-demo-golang:${TAG_VERSION} --build-arg NUCLIO_BUILD_OFFLINE=true --build-arg NUCLIO_BUILD_IMAGE_HANDLER_DIR=github.com/v3io/demos")
+                            sh("docker build . --tag netops-demo-golang:${TAG_VERSION} --build-arg NUCLIO_BUILD_OFFLINE=true --build-arg NUCLIO_BUILD_IMAGE_HANDLER_DIR=github.com/v3io/demos")
                         }
                     }
                 }
