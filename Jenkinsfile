@@ -92,14 +92,14 @@ spec:
 
                 stage('push') {
                     container('docker-cmd') {
-                        dockerx.images_push_multi_registries(["tsdb-ingest:${TAG_VERSION}"], multi_credentials)
+                        dockerx.images_push_multi_registries(["netops-demo-golang:${TAG_VERSION}"], multi_credentials)
                     }
                 }
 
                 stage('build netops-demo-py in dood') {
                     container('docker-cmd') {
                         dir("${BUILD_FOLDER}/src/github.com/v3io/${git_project}/netops/py") {
-                            sh("docker build . netops-demo-py:${TAG_VERSION}")
+                            sh("docker build . --tag netops-demo-py:${TAG_VERSION}")
                         }
                     }
                 }
