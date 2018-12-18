@@ -78,33 +78,31 @@ spec:
                     }
                 }
 
-                stage('build netops-demo-golang in dood') {
-                    container('docker-cmd') {
-                        dir("${BUILD_FOLDER}/src/github.com/v3io/${git_project}/netops/golang/src/github.com/v3io/demos") {
-                            sh("docker build . --tag netops-demo-golang:${TAG_VERSION} --build-arg NUCLIO_BUILD_OFFLINE=true --build-arg NUCLIO_BUILD_IMAGE_HANDLER_DIR=github.com/v3io/demos")
+                parallel(
+                        'build netops-demo-golang': {
+                            container('docker-cmd') {
+                                dir("${BUILD_FOLDER}/src/github.com/v3io/${git_project}/netops/golang/src/github.com/v3io/demos") {
+                                    sh("docker build . --tag netops-demo-golang:${TAG_VERSION} --build-arg NUCLIO_BUILD_OFFLINE=true --build-arg NUCLIO_BUILD_IMAGE_HANDLER_DIR=github.com/v3io/demos")
+                                }
+                            }
+
+                            container('docker-cmd') {
+                                dockerx.images_push_multi_registries(["netops-demo-golang:${TAG_VERSION}"], multi_credentials)
+                            }
+                        },
+
+                        'build netops-demo-py': {
+                            container('docker-cmd') {
+                                dir("${BUILD_FOLDER}/src/github.com/v3io/${git_project}/netops/py") {
+                                    sh("docker build . --tag netops-demo-py:${TAG_VERSION}")
+                                }
+                            }
+
+                            container('docker-cmd') {
+                                dockerx.images_push_multi_registries(["netops-demo-py:${TAG_VERSION}"], multi_credentials)
+                            }
                         }
-                    }
-                }
-
-                stage('push') {
-                    container('docker-cmd') {
-                        dockerx.images_push_multi_registries(["netops-demo-golang:${TAG_VERSION}"], multi_credentials)
-                    }
-                }
-
-                stage('build netops-demo-py in dood') {
-                    container('docker-cmd') {
-                        dir("${BUILD_FOLDER}/src/github.com/v3io/${git_project}/netops/py") {
-                            sh("docker build . --tag netops-demo-py:${TAG_VERSION}")
-                        }
-                    }
-                }
-
-                stage('push') {
-                    container('docker-cmd') {
-                        dockerx.images_push_multi_registries(["netops-demo-py:${TAG_VERSION}"], multi_credentials)
-                    }
-                }
+                )
 
                 stage('update release status') {
                     container('jnlp') {
