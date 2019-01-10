@@ -33,7 +33,7 @@ spec:
     - name: docker-cmd
       image: docker
       command: [ "/bin/sh", "-c", "--" ]
-      args: [ "while true; do sleep 30; done;" ]
+      args: [ "apk add make; while true; do sleep 30; done;" ]
       volumeMounts:
         - name: docker-sock
           mountPath: /var/run
@@ -84,8 +84,8 @@ spec:
                     parallel(
                             'build netops-demo-golang': {
                                 container('docker-cmd') {
-                                    dir("${BUILD_FOLDER}/src/github.com/v3io/${git_project}/netops/golang/src/github.com/v3io/demos") {
-                                        sh("docker build . --tag netops-demo-golang:${DOCKER_TAG_VERSION} --build-arg NUCLIO_BUILD_OFFLINE=true --build-arg NUCLIO_BUILD_IMAGE_HANDLER_DIR=github.com/v3io/demos")
+                                    dir("${BUILD_FOLDER}/src/github.com/v3io/${git_project}/netops") {
+                                        sh("NETOPS_TAG=${DOCKER_TAG_VERSION} make golang")
                                     }
                                 }
 
@@ -96,8 +96,8 @@ spec:
 
                             'build netops-demo-py': {
                                 container('docker-cmd') {
-                                    dir("${BUILD_FOLDER}/src/github.com/v3io/${git_project}/netops/py") {
-                                        sh("docker build . --tag netops-demo-py:${DOCKER_TAG_VERSION}")
+                                    dir("${BUILD_FOLDER}/src/github.com/v3io/${git_project}/netops") {
+                                        sh("NETOPS_TAG=${DOCKER_TAG_VERSION} make py")
                                     }
                                 }
 
